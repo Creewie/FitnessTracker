@@ -1,6 +1,8 @@
 package com.fitnesstracker
 
 import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -25,6 +27,7 @@ class MainActivity : AppCompatActivity() {
     private val gson = Gson()
     private val fileName = "workouts.json"
     private lateinit var recyclerView: RecyclerView
+    private lateinit var adapter: WorkoutAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,6 +39,8 @@ class MainActivity : AppCompatActivity() {
 
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
+        adapter = WorkoutAdapter(workouts, ::showWorkoutDetails)
+        recyclerView.adapter = adapter
 
 
         val typeRadioGroup: RadioGroup = findViewById(R.id.typeRadioGroup)
@@ -62,6 +67,7 @@ class MainActivity : AppCompatActivity() {
             if (type.isNotEmpty() && distance > 0 && duration > 0 && calories > 0) {
                 val workout = Workout(type, distance, duration, calories, intensity)
                 workouts.add(workout)
+                adapter.notifyDataSetChanged()
                 saveData()
                 Toast.makeText(this, "Trening dodany!", Toast.LENGTH_SHORT).show()
             } else {
@@ -101,4 +107,32 @@ class MainActivity : AppCompatActivity() {
             workouts.addAll(gson.fromJson(json, type))
         }
     }
+}
+
+// Adapter for RecyclerView
+class WorkoutAdapter(
+    private val workouts: List<Workout>,
+    private val onClick: (Workout) -> Unit
+) : RecyclerView.Adapter<WorkoutAdapter.WorkoutViewHolder>() {
+
+    class WorkoutViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val typeText: TextView = view.findViewById(R.id.typeText)
+        val summaryText: TextView = view.findViewById(R.id.summaryText)
+        val detailsButton: Button = view.findViewById(R.id.detailsButton)
+    }
+
+    override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): WorkoutViewHolder {
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_workout, parent, false)
+        return WorkoutViewHolder(view)
+    }
+
+    override fun onBindViewHolder(holder: WorkoutViewHolder, position: Int) {
+        val workout = workouts[position]
+        holder.typeText.text = workout.type
+        holder.summaryText.text = "${workout.distance} km, ${workout.duration} min"
+        holder.detailsButton.setOnClickListener { onClick(workout) }
+    }
+
+    override fun getItemCount() = workouts.size
 }
